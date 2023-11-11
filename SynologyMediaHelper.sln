@@ -1,0 +1,39 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.7.34221.43
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "SolutionItems", "SolutionItems", "{4CC311E0-13AB-4745-BD0A-72C09E87A72C}"
+	ProjectSection(SolutionItems) = preProject
+		.dockerignore = .dockerignore
+		.editorconfig = .editorconfig
+		.gitignore = .gitignore
+		Directory.Build.props = Directory.Build.props
+		README.md = README.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{2012523E-E79D-4A36-A9E1-CD8AE625CB48}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SynologyMediaHelper", "src\SynologyMediaHelper\SynologyMediaHelper.csproj", "{D3C364E0-BFB1-47D3-A17F-4CF539609195}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D3C364E0-BFB1-47D3-A17F-4CF539609195}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D3C364E0-BFB1-47D3-A17F-4CF539609195}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D3C364E0-BFB1-47D3-A17F-4CF539609195}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D3C364E0-BFB1-47D3-A17F-4CF539609195}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{D3C364E0-BFB1-47D3-A17F-4CF539609195} = {2012523E-E79D-4A36-A9E1-CD8AE625CB48}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {D7159869-72B3-4F14-90D8-8AC837C5891D}
+	EndGlobalSection
+EndGlobal
