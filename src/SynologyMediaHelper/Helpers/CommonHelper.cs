@@ -1,17 +1,14 @@
 ﻿using System.Text;
 
+namespace SynologyMediaHelper.Helpers;
 public static class CommonHelper
 {
-    #region Behavior
-    public static string GetBaseDirectory()
-    {
-        return AppDomain.CurrentDomain.BaseDirectory;
-    }
-    public static string GetMediaDirectory()
-    {
-        return @"\\SabryDS\home\Photos";
-    }
+    #region Properties
+    public static string BaseDirectory => AppDomain.CurrentDomain.BaseDirectory;
+    public static string ToolsDirectory => Path.Combine(BaseDirectory, "Tools");
+    #endregion
 
+    #region Behavior
     public static string FormatNumberToLength(int number, int length)
     {
         var builder = new StringBuilder();
@@ -22,9 +19,10 @@ public static class CommonHelper
     }
     public static string[] SplitStringLines(string text)
     {
-        return text
-            .Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
-            .Select(i => i.Trim()).ToArray();
+        return string.IsNullOrWhiteSpace(text)
+            ? Array.Empty<string>()
+            : text.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+                .Select(i => i.Trim()).ToArray();
     }
     #endregion
 }

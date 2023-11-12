@@ -1,5 +1,7 @@
-﻿using System.Text;
+﻿using SynologyMediaHelper.Helpers;
+using System.Text;
 
+namespace SynologyMediaHelper.Helpers;
 public class ExifHelper
 {
     #region Fields-Static
@@ -8,10 +10,10 @@ public class ExifHelper
     private const string ExifDefaultCreationTag = "FileCreateDate";
     private const bool AttemptToFixMediaIncorrectOffsets = true;
 
-    private static readonly string BaseDirectory;
-    private static readonly string TempDirectory;
+    private static readonly string ToolsDirectory = CommonHelper.ToolsDirectory;
+    private static readonly string TempDirectory = Path.Combine(CommonHelper.BaseDirectory, @"Temp\Tools");
 
-    private static readonly string[] ExifTargetedDateTimeTags;
+    private static readonly string[] ExifTargetedDateTimeTags = new[] { ExifDefaultCreationTag, "FileModifyDate" };
     private static readonly string[] SupportedMediaExtensions;
     #endregion
 
@@ -22,20 +24,16 @@ public class ExifHelper
     #region Constructors
     static ExifHelper()
     {
-        BaseDirectory = CommonHelper.GetBaseDirectory();
-        if (!File.Exists(Path.Combine(BaseDirectory, ExifTool)))
+        if (!File.Exists(Path.Combine(ToolsDirectory, ExifTool)))
             throw new FileNotFoundException("ExifTool is missing!");
 
-        TempDirectory = Path.Combine(BaseDirectory, @"Temp\Tools");
         if (Directory.Exists(TempDirectory))
             Directory.Delete(TempDirectory, true);
 
         Directory.CreateDirectory(TempDirectory);
 
-        ExifTargetedDateTimeTags = new[] { ExifDefaultCreationTag, "FileModifyDate" };
-
         SupportedMediaExtensions =
-            ExifExecute(BaseDirectory, ExifTool, "-T -listf")
+            ExifExecute(ToolsDirectory, ExifTool, "-T -listf")
             .ToLower()
             .Replace("\r\n", " ")
             .Split(' ')
@@ -46,7 +44,7 @@ public class ExifHelper
     {
         Id = $"{Guid.NewGuid().ToString().Replace("-", string.Empty)}.exe";
 
-        File.Copy(Path.Combine(BaseDirectory, ExifTool),
+        File.Copy(Path.Combine(ToolsDirectory, ExifTool),
             Path.Combine(TempDirectory, Id));
     }
     #endregion
@@ -116,7 +114,8 @@ public class ExifHelper
     {
         var builder = new StringBuilder();
         foreach (var src in sources)
-            builder.AppendLine(ClearBackupFiles(new DirectoryInfo(src)));
+            if (string.IsNullOrWhiteSpace(src) && Directory.Exists(src))
+                builder.AppendLine(ClearBackupFiles(new DirectoryInfo(src)));
 
         var lines = CommonHelper.SplitStringLines(builder.ToString());
 
@@ -153,13 +152,13 @@ public class ExifHelper
         foreach (var dir in directory.GetDirectories())
             builder.AppendLine(ClearBackupFiles(dir));
 
-        return builder.AppendLine(ExifExecute(BaseDirectory, ExifTool,
+        return builder.AppendLine(ExifExecute(ToolsDirectory, ExifTool,
             $"-overwrite_original -delete_original! \"{directory.FullName}\""))
             .ToString();
     }
     public static string ReadVersion()
     {
-        return ExifExecute(BaseDirectory, ExifTool, "-ver");
+        return ExifExecute(ToolsDirectory, ExifTool, "-ver");
     }
     #endregion
 

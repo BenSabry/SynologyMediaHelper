@@ -1,9 +1,10 @@
 ﻿using Microsoft.Extensions.Configuration;
+using SynologyMediaHelper.Core;
 
-
+namespace SynologyMediaHelper.Helpers;
 public static class SettingsHelper
 {
-    internal static readonly string appsettingsPath = Path.Combine(CommonHelper.GetBaseDirectory(), "AppSettings.json");
+    internal static readonly string appsettingsPath = Path.Combine(CommonHelper.BaseDirectory, "AppSettings.json");
     public static Settings GetSettings()
     {
         var config = new ConfigurationBuilder()

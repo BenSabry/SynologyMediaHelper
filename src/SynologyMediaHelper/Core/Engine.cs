@@ -1,35 +1,25 @@
-﻿public class Engine
+﻿using SynologyMediaHelper.Helpers;
+
+namespace SynologyMediaHelper.Core;
+public static class Engine
 {
     #region Fields-Static
-    private static readonly Settings Settings;
-
-    private static readonly List<FileInfo> Files;
-    private static bool FilesEnumerationTaskFinished = false;
-    private static int TaskDelayTimeForEnumerationTask;
+    private static readonly Settings Settings = SettingsHelper.GetSettings();
+    private static readonly List<FileInfo> Files = new List<FileInfo>();
+    private static int TaskDelayTimeForEnumerationTask = Settings.TasksCount * 10;
+    private static bool FilesEnumerationTaskFinished;
 
     private static DateTime StartDateTime;
-    private static int StartFileIndex = 0;
-    private static int CurrentFileIndex = 0;
+    private static int StartFileIndex;
+    private static int CurrentFileIndex;
 
-    private static int Moves = 0;
-    private static int Updates = 0;
-    private static int Fails = 0;
+    private static int Moves;
+    private static int Updates;
+    private static int Fails;
     #endregion
 
     #region Constructors
-    static Engine()
-    {
-        LogHelper.Log("Initialize");
 
-        Settings = SettingsHelper.GetSettings();
-
-        Files = new List<FileInfo>();
-        TaskDelayTimeForEnumerationTask = Settings.TasksCount * 10;
-    }
-    public Engine()
-    {
-
-    }
     #endregion
 
     #region Behavior
@@ -116,18 +106,15 @@
                 if ((i % (Settings.TasksCount + 1)) == 0)
                     LogProgress(file.FullName);
 
-                //TrimUnWantedTextFromFileName(logger, ref file);
 
                 if (exif.TryReadMediaDefaultCreationDate(file.FullName, out var date))
                     MoveFileDirectoryBasedOnDate(logger, ref file, date);
 
                 else if (DateHelper.TryExtractMinimumValidDateTime(file.Name, out date))
                 {
-                    if (exif.TryReadMinimumDate(file.FullName, out var infoDate))
-                    {
-                        if (infoDate.Date == date.Date) date = infoDate;
-                        else if (infoDate < date) date = infoDate;
-                    }
+                    if (exif.TryReadMinimumDate(file.FullName, out var infoDate)
+                        && (infoDate.Date == date.Date || infoDate < date))
+                        date = infoDate;
 
                     UpdateMediaTargetedDateTime(exif, logger, file, date);
                     MoveFileDirectoryBasedOnDate(logger, ref file, date);
@@ -145,12 +132,13 @@
         return Task.Run(() =>
         {
             foreach (var source in Settings.Sources)
-                if (string.IsNullOrWhiteSpace(source))
-                    continue;
-                else if (File.Exists(source))
-                    Files.Add(new FileInfo(source));
-                else if (Directory.Exists(source))
-                    EnumerateMediaFiles(new DirectoryInfo(source));
+                if (!string.IsNullOrWhiteSpace(source))
+                {
+                    if (File.Exists(source))
+                        Files.Add(new FileInfo(source));
+                    else if (Directory.Exists(source))
+                        EnumerateMediaFiles(new DirectoryInfo(source));
+                }
 
             FilesEnumerationTaskFinished = true;
         });
@@ -158,7 +146,7 @@
     private static void EnumerateMediaFiles(DirectoryInfo directory)
     {
         foreach (var file in directory.GetFiles().Where(IsSupportedMediaFile))
-            if (!Files.Any(i => i.FullName.Equals(file.FullName)))
+            if (!Files.Exists(i => i.FullName.Equals(file.FullName, StringComparison.Ordinal)))
                 Files.Add(file);
 
         foreach (var dir in directory.GetDirectories())
@@ -167,15 +155,16 @@
     private static void DeleteEmptyDirectories()
     {
         foreach (var source in Settings.Sources)
-            DeleteEmptyDirectories(new DirectoryInfo(source));
+            if (string.IsNullOrWhiteSpace(source) && Directory.Exists(source))
+                DeleteEmptyDirectories(new DirectoryInfo(source));
     }
     private static void DeleteEmptyDirectories(DirectoryInfo directory)
     {
         foreach (var dir in directory.EnumerateDirectories())
             DeleteEmptyDirectories(dir);
 
-        if (directory.EnumerateFiles().Count() == default
-            && directory.EnumerateDirectories().Count() == default)
+        if (!directory.EnumerateFiles().Any()
+            && !directory.EnumerateDirectories().Any())
             directory.Delete();
     }
     private static bool IsSupportedMediaFile(FileInfo file)
@@ -201,26 +190,26 @@
         if (!dir!.Exists)
             dir.Create();
     }
-    private static bool TryMoveFile(LogHelper logger, ref FileInfo src, string dest)
+    private static void TryMoveFile(LogHelper logger, ref FileInfo src, string dest)
     {
         if (File.Exists(dest))
         {
             LogFail(logger, src.FullName);
-            return false;
+            return;
         }
 
+#pragma warning disable CA1031 // Do not catch general exception types
         try
         {
             MakeSureDirectoryExistsForFile(dest);
             src.MoveTo(dest);
             LogMove(logger, src.FullName, dest);
-            return true;
         }
         catch
         {
             LogFail(logger, dest);
-            return false;
         }
+#pragma warning restore CA1031 // Do not catch general exception types
     }
 
     private static void UpdateMediaTargetedDateTime(ExifHelper exif, LogHelper logger, FileInfo file, DateTime dateTime)
@@ -232,8 +221,10 @@
     }
     private static bool FilePathIsAlignedWithDate(FileInfo file, DateTime dateTime)
     {
+#pragma warning disable CA1305 // Specify IFormatProvider
         return dateTime.Year == int.Parse(file.Directory!.Parent!.Name)
             && dateTime.Month == int.Parse(file.Directory!.Name);
+#pragma warning restore CA1305 // Specify IFormatProvider
     }
 
     private static void LogMove(LogHelper logger, string src, string dest)
@@ -254,14 +245,16 @@
 
     private static void LogProgress(string message)
     {
+#pragma warning disable S6561 // Avoid using "DateTime.Now" for benchmarking or timing operations
         var t = DateTime.Now - StartDateTime;
+#pragma warning restore S6561 // Avoid using "DateTime.Now" for benchmarking or timing operations
         var actions = (Moves + Updates) / t.TotalSeconds;
         var processes = CurrentFileIndex / t.TotalSeconds;
 
         LogHelper.Clear();
         LogHelper.Log(
             "\n\n"
-            + $"{(int)t.Hours}H:{(int)t.Minutes}M:{(int)t.Seconds}S Currnet: {CurrentFileIndex}/{Files.Count} Moved:{Moves} Updated: {Updates}\n"
+            + $"{t.Hours}H:{t.Minutes}M:{t.Seconds}S Currnet: {CurrentFileIndex}/{Files.Count} Moved:{Moves} Updated: {Updates}\n"
             + $"Processing Speed: {(int)processes}/Second {(int)(processes * 60)}/Minute {(int)(processes * 3600)}/Hour\n"
             + $"Actions Speed: {(int)actions}/Second {(int)(actions * 60)}/Minute {(int)(actions * 3600)}/Hour\n"
             + $"{message}\n\n\n");

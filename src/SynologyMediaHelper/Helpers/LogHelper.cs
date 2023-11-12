@@ -1,4 +1,5 @@
-﻿public class LogHelper
+﻿namespace SynologyMediaHelper.Helpers;
+public class LogHelper
 {
     #region Fields-Static
     private static readonly string TempDirectory;
@@ -11,7 +12,7 @@
     #region Constructors
     static LogHelper()
     {
-        TempDirectory = @$"{CommonHelper.GetBaseDirectory()}\Temp\Logs";
+        TempDirectory = @$"{CommonHelper.BaseDirectory}\Temp\Logs";
         if (!Directory.Exists(TempDirectory))
             Directory.CreateDirectory(TempDirectory);
     }

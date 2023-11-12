@@ -1,6 +1,7 @@
 ﻿using System.Globalization;
 using System.Text.RegularExpressions;
 
+namespace SynologyMediaHelper.Helpers;
 public class DateHelper
 {
     #region Fields-Static

@@ -1,6 +1,7 @@
 ﻿using System.Diagnostics;
 using System.Text;
 
+namespace SynologyMediaHelper.Helpers;
 public static class ProcessHelper
 {
     public static void RunUsingShell(string name, string path, string args)

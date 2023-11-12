@@ -1,4 +1,5 @@
-﻿public class SynologyHelper
+﻿namespace SynologyMediaHelper.Helpers;
+public class SynologyHelper
 {
     #region Fields-Static
     private static readonly string[] SupportedPhotoExtensions;

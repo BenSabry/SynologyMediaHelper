@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Configuration;
 
+namespace SynologyMediaHelper.Core;
 public sealed class Settings
 {
     #region Fields
