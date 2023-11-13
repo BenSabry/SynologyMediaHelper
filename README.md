@@ -1,5 +1,5 @@
 # Synology Media Helper
-<b>*Synology Media Helper*</b> is a utility designed to rectify issues with media file organization in your <b>*Synology Photos App*</b>, <b>*[Problems like this](#Fixable-Problems)*</b>.
+<b>*Synology Media Helper*</b> is a utility designed to rectify issues with media file organization in your <b>*Synology Photos App*</b>, <b>*[Issues like these](#Fixable-Issues)*</b>.
 
 
 # Downloads
@@ -41,7 +41,7 @@ c. Increase the <b>*TasksCount*</b> in <b>*[AppSettings.json](#AppSettings)*</b>
 
 Now just wait and your <b>*Synology*</b> will reindex media files and reorder them again based on updated info
 
-# Fixable Problems
+# Fixable Issues
 [<b>*Synology Photos: Not Using Taken Date*</b>](https://www.reddit.com/r/synology/comments/kgy604/synology_photos_not_using_taken_date/)<br />
 [<b>*Synology Photos: organizes everything by modified date instead of creation date*</b>](https://www.reddit.com/r/synology/comments/120jsvk/synology_photos_organizes_everything_by_modified/)<br />
 [<b>*Synology Photos: Indexing photos/videos with wrong date*</b>](https://www.reddit.com/r/synology/comments/qj9wya/synology_photos_indexing_photosvideos_with_wrong/)<br />
