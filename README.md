@@ -5,6 +5,11 @@
 <b>*Last release*</b> [v0.2.0-alpha](https://github.com/BenSabry/SynologyMediaHelper/releases/tag/v0.2.0-alpha)<br />
 <b>*All releases*</b> [releases](https://github.com/BenSabry/SynologyMediaHelper/releases)
 
+# Recommendations
+a. <b>*BACKUP*</b> your media files first (you may use <b>*Synology Snapshot Replication*</b>)
+a. Connect your PC to <b>*SynologyNAS*</b> using Cable not WIFI for best performance
+b. Increase the <b>*TasksCount*</b> in <b>*AppSettings.json*</b> (recommended: 2, best: <b>*CPU Cores*</b> count)
+
 # How to use
 1. From your Windows PC open Photos Library directory on Synology from <b>*Windows Network (SMB)*</b><br />
 2. Add the Path of your library to <b>*Sources*</b>in <b>*AppSettings.json*</b>file<br />
@@ -17,7 +22,7 @@
 &nbsp;&nbsp;&nbsp;2.2. else:<br />
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;2.2.1. Extract Date from filename if any and All Dates in File info and choose the oldest Date<br />
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;2.2.2. Update the File Info <b>*CreationDate*</b> (after creating temp file as Backup)<br />
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;2.2.3. Move the File to Directory based on the Date <b>*MediaLibrary\Year\Month\File.*</b><br />
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;2.2.3. Move the File to Directory based on the Date <b>*MediaLibrary\Year\Month\File.*</b><br /><br />
 3. Clear Temp files -Created as Backup incase Program/Windows closed while working to prevent any loss<br />
 4. Delete Empty Directories<br /><br />
 Now just wait and your Synology will reindex media files and reorder them again based on new Dates
