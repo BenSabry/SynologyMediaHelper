@@ -6,9 +6,9 @@
 <b>*All releases*</b> [releases](https://github.com/BenSabry/SynologyMediaHelper/releases)
 
 # Recommendations
-a. <b>*BACKUP*</b> your media files first (you may use <b>*Synology Snapshot Replication*</b>)
-a. Connect your PC to <b>*SynologyNAS*</b> using Cable not WIFI for best performance
-b. Increase the <b>*TasksCount*</b> in <b>*AppSettings.json*</b> (recommended: 2, best: <b>*CPU Cores*</b> count)
+a. <b>*BACKUP*</b> your media files first (you may use <b>*Synology Snapshot Replication*</b>)<br />
+b. Connect your PC to <b>*SynologyNAS*</b> using Cable not WIFI for best performance<br />
+c. Increase the <b>*TasksCount*</b> in <b>*AppSettings.json*</b> (recommended: 2, best: <b>*CPU Cores*</b> count)<br />
 
 # How to use
 1. From your Windows PC open Photos Library directory on Synology from <b>*Windows Network (SMB)*</b><br />
