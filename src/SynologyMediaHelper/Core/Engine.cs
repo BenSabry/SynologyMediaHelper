@@ -52,6 +52,12 @@ public static class Engine
 
     public static void Run()
     {
+        if (Settings.Sources.All(string.IsNullOrWhiteSpace))
+        {
+            LogHelper.Log("PleaseAddSourcesToAppSettings");
+            return;
+        }
+
         if (Settings.EnableResume)
             InitializeResume();
 

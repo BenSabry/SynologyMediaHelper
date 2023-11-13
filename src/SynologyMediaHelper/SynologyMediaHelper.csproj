@@ -17,6 +17,9 @@
     <None Update="AppSettings.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="BenSabry-SynologyMediaHelper.url">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
     <None Update="Tools\exiftool.exe">
       <CopyToOutputDirectory>Always</CopyToOutputDirectory>
     </None>
