@@ -49,6 +49,17 @@ public static class Engine
     {
         StartDateTime = DateTime.Now;
     }
+    private static void ValidateTasksConfig()
+    {
+        if (Settings.TasksCount < 0 || Environment.ProcessorCount == 1)
+            Settings.TasksCount = 1;
+
+        else if (Settings.TasksCount > 1 && Environment.ProcessorCount == 2)
+            Settings.TasksCount = 2;
+
+        else if (Settings.TasksCount > Environment.ProcessorCount / 2)
+            Settings.TasksCount = Environment.ProcessorCount / 2;
+    }
 
     public static void Run()
     {
@@ -62,6 +73,7 @@ public static class Engine
             InitializeResume();
 
         InitializeTimer();
+        ValidateTasksConfig();
 
         var tasks = new List<Task>
         {
