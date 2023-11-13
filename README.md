@@ -1,10 +1,21 @@
 # Synology Media Helper
-<b>*Synology Media Helper*</b> is a tool for fixing media files to be ordered properly on your <b>*Synology Photos App*</b> in case of <b>*[Problems like this](#Fixable-Problems)*</b>.
+<b>*Synology Media Helper*</b> is a utility designed to rectify issues with media file organization in your <b>*Synology Photos App*</b>, <b>*[Problems like this](#Fixable-Problems)*</b>.
 
 
 # Downloads
 <b>*Last release*</b> [v0.2.0-alpha](https://github.com/BenSabry/SynologyMediaHelper/releases/tag/v0.2.0-alpha)<br />
 <b>*All releases*</b> [releases](https://github.com/BenSabry/SynologyMediaHelper/releases)
+
+# Story
+I’m a proud owner of a Synology (DS720+) and I must say, I’m quite fond of it, especially the Photos/Drive apps.<br />
+
+Previously, I was a Google Photos user, so I downloaded a complete backup of all my media from Google and transferred it to the Synology Photos folder. However, I encountered a significant issue - the order of the media. All my media was arranged according to the date I uploaded it to Synology, not the creation date or date taken, etc. After some research, I found numerous online discussions about this issue, particularly here, even Synology Photos’ solution of manually modifying the image date is good not feasible for a batch of more than 20,000 files!<br />
+
+So, I decided to tackle this problem head-on and develop my own solution. After several days of development and testing on my own media library, I’m happy to report that it’s complete and all my files are now properly sorted on Synology Photos.<br />
+
+Why am I sharing this? Because I experienced this frustrating problem and I want to help others who might be facing the same issue. If you’re interested, you can try it out and share your feedback.<br />
+
+Please remember to BACKUP your media before trying anything new, whether it’s from me or anyone else (I recommend using Synology Snapshot Replication). Lastly, a big thank you to Synology for the excellent combination of software and hardware. I truly enjoy your product.
 
 # Recommendations
 a. <b>*BACKUP*</b> your media files first (you may use <b>*Synology Snapshot Replication*</b>)<br />
