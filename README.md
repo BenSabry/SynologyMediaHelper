@@ -1,5 +1,5 @@
 # Synology Media Helper
-<b>*Synology Media Helper*</b> is a tool for fixing media files to be ordered properly on your <b>*Synology Photos App*</b> in case of <b>*[Problems like this](#FixableProblems)*</b>.
+<b>*Synology Media Helper*</b> is a tool for fixing media files to be ordered properly on your <b>*Synology Photos App*</b> in case of <b>*[Problems like this](#Fixable-Problems)*</b>.
 
 
 # Downloads
