@@ -1,5 +1,9 @@
 # Synology Media Helper
-<b>*Synology Media Helper*</b> is a tool for fixing media files <b>*CreationDate*</b> to be ordered successfully on your <b>*Synology Photos App*</b>.
+<b>*Synology Media Helper*</b> is a tool for fixing media files <b>*CreationDate*</b> to be ordered successfully on your <b>*Synology Photos App*</b> in case you uploaded your old Media and found it not organized properly.
+
+# Downloads
+<b>*Last release*</b> [v0.2.0-alpha](https://github.com/BenSabry/SynologyMediaHelper/releases/tag/v0.2.0-alpha)<br />
+<b>*All releases*</b> [releases](https://github.com/BenSabry/SynologyMediaHelper/releases)
 
 # How to use
 1. From your Windows PC open Photos Library directory on Synology from <b>*Windows Network (SMB)*</b><br />
