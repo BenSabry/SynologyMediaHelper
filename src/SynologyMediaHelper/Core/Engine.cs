@@ -63,14 +63,8 @@ public static class Engine
 
     public static void Run()
     {
-        if (Settings.Sources.All(string.IsNullOrWhiteSpace))
-        {
-            LogHelper.Log("PleaseAddSourcesToAppSettings");
-            return;
-        }
-
-        if (Settings.EnableResume)
-            InitializeResume();
+        if (!SourcesAreValidToUse()) return;
+        if (Settings.EnableResume) InitializeResume();
 
         InitializeTimer();
         ValidateTasksConfig();
@@ -143,6 +137,15 @@ public static class Engine
         LogResult(logger);
     }
 
+    private static bool SourcesAreValidToUse()
+    {
+        if (Settings.Sources.All(string.IsNullOrWhiteSpace))
+        {
+            LogHelper.Log("PleaseAddSourcesToAppSettings");
+            return false;
+        }
+        return true;
+    }
     private static Task RunMediaFilesEnumerationTask()
     {
         LogHelper.Log("InizializeMediaFiles");

@@ -2,10 +2,29 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>net7.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <Trimming>full</Trimming>
+    <PublishAot>True</PublishAot>
+    <PackageProjectUrl>https://github.com/BenSabry/SynologyMediaHelper</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/BenSabry/SynologyMediaHelper</RepositoryUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <AssemblyVersion></AssemblyVersion>
+    <PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <FileVersion></FileVersion>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\..\LICENSE">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+    <None Include="..\..\README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Extensions.Configuration" Version="7.0.0" />
@@ -27,6 +46,10 @@
 
   <ItemGroup>
     <PackageReference Update="SonarAnalyzer.CSharp" Version="9.12.0.78982" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Properties\PublishProfiles\" />
   </ItemGroup>
 
 </Project>
