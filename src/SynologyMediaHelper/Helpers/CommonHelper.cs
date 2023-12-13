@@ -6,6 +6,8 @@ public static class CommonHelper
     #region Properties
     public static string BaseDirectory => AppDomain.CurrentDomain.BaseDirectory;
     public static string ToolsDirectory => Path.Combine(BaseDirectory, "Tools");
+    
+    private static readonly char[] separator = ['\r', '\n'];
     #endregion
 
     #region Behavior
@@ -20,8 +22,7 @@ public static class CommonHelper
     public static string[] SplitStringLines(string text)
     {
         return string.IsNullOrWhiteSpace(text)
-            ? Array.Empty<string>()
-            : text.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries)
+            ? [] : text.Split(separator, StringSplitOptions.RemoveEmptyEntries)
                 .Select(i => i.Trim()).ToArray();
     }
     #endregion

@@ -2,78 +2,43 @@
 using System.Text.RegularExpressions;
 
 namespace SynologyMediaHelper.Helpers;
-public class DateHelper
+public static class DateHelper
 {
     #region Fields-Static
-    private const int RegexTimeoutMilliseconds = 500;
-    private static readonly Func<string, (bool, DateTime)>[] Parsers;
+    private const int RegexTimeoutMilliseconds = 100;
+    private static readonly Func<string, (bool Valid, DateTime Value)>[] Parsers = [MatchFormatedRegex, MatchNumericRegex];
 
-    private static readonly Regex[] InvalidRegexes;
-    private static readonly (Regex, string)[] FormatedRegexes;
-    private static readonly Regex[] NumericsRegexes;
-    #endregion
-
-    #region Constructors
-    static DateHelper()
+    private static readonly Regex[] NumericsRegexes = [CreateRegex(@"\d+")];
+    private static readonly Regex[] InvalidRegexes = [CreateRegex(@"(^FB_IMG_)(\d+)"), CreateRegex(@"(^received_)(\d+)")];
+    private static readonly (Regex, string)[] FormatedRegexes = new string[]
     {
-        InvalidRegexes = new[]
-        {
-            GetRegex(@"(^FB_IMG_)(\d+)"),
-            GetRegex(@"(^received_)(\d+)"),
-        };
+        "yyyyMMdd_HHmmss",
+        "yyyyMMdd-HHmmss",
+        "yyyyMMdd HHmmss",
 
-        FormatedRegexes = new[]
-        {
-            //DateTime
-            (GetRegex(@"(20\d{6})_(\d{6})"), "yyyyMMdd_HHmmss"),
-            (GetRegex(@"(20\d{6})-(\d{6})"), "yyyyMMdd-HHmmss"),
-            (GetRegex(@"(20\d{2})-(\d{2})-(\d{2})-(\d{2})-(\d{2})-(\d{2})"), "yyyy-MM-dd-HH-mm-ss"),
-            (GetRegex(@"(20\d{2})_(\d{2})_(\d{2}) (\d{2})_(\d{2})_(\d{2})"), "yyyy_MM_dd HH_mm_ss"),
-            (GetRegex(@"(20\d{2})-(\d{2})-(\d{2})_(\d{2})-(\d{2})-(\d{2})"), "yyyy-MM-dd_HH-mm-ss"),
+        "yyyy_MM_dd_HH_mm_ss",
+        "yyyy_MM_dd-HH_mm_ss",
+        "yyyy_MM_dd HH_mm_ss",
+        "yyyy-MM-dd_HH-mm-ss",
+        "yyyy-MM-dd-HH-mm-ss",
+        "yyyy-MM-dd HH-mm-ss",
+        "yyyy MM dd_HH mm ss",
+        "yyyy MM dd-HH mm ss",
+        "yyyy MM dd HH mm ss",
 
-            //DateTimeLONG
-            (GetRegex(@"/\\b(?:Mon|Tue(?:s)?|Wed(?:nes)?|Thu(?:rs)?|Fri|Sat(?:ur)?|Sun)(?:day)?\\b,?\\s+(?:(?:0?[1-9])|(?:[12][0-9])|(?:3[01]))\\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\\s+\\d{4}\\s+(?:(?:[01]?[0-9])|(?:2[0-3]))(?::[0-5]?[0-9]){2}/g"), "DD MMM YYYY HH:MM:SS"),
-            (GetRegex(@"/\\b(?:Mon|Tue(?:s)?|Wed(?:nes)?|Thu(?:rs)?|Fri|Sat(?:ur)?|Sun)(?:day)?\\b,?\\s+(?:(?:0?[1-9])|(?:[12][0-9])|(?:3[01]))\\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\\s+\\d{4}\\s+(?:(?:[01]?[0-9])|(?:2[0-3]))(?:-[0-5]?[0-9]){2}/g"), "DD MMM YYYY HH-MM-SS"),
-            (GetRegex(@"/\\b(?:Mon|Tue(?:s)?|Wed(?:nes)?|Thu(?:rs)?|Fri|Sat(?:ur)?|Sun)(?:day)?\\b,?\\s+(?:(?:0?[1-9])|(?:[12][0-9])|(?:3[01]))\\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\\s+\\d{4}\\s+(?:(?:[01]?[0-9])|(?:2[0-3]))(?:_[0-5]?[0-9]){2}/g"), "DD MMM YYYY HH_MM_SS"),
+        "dd MMM YYYY HH:mm:ss",
+        "dd MMM YYYY HH_mm_ss",
+        "dd MMM YYYY HH-mm-ss",
 
-            //DateONLY
-            (GetRegex(@"(20\d{6})"), "yyyyMMdd"),
-            (GetRegex(@"(20\d{2})[-](\d{2})[-](\d{2})"), "yyyy-MM-dd"),
-            (GetRegex(@"(20\d{2})[_](\d{2})[_](\d{2})"), "yyyy_MM_dd")
-        };
-
-        NumericsRegexes = new Regex[]
-        {
-            GetRegex(@"\d+")
-        };
-
-        Parsers = new[]
-        {
-            MatchFormatedRegex,
-            MatchNumericRegex,
-        };
+        "yyyyMMdd",
+        "yyyy-MM-dd",
+        "yyyy_MM_dd"
     }
+        .Select(format => (CreateRegex(GenerateRegexPatternByDateFormat(format)), format))
+        .ToArray();
     #endregion
 
     #region Behavior
-    public static bool TryExtractDateTime(string s, out DateTime result)
-    {
-        result = default;
-
-        if (MatchesInvalidRegex(s)) return false;
-
-        foreach (var parser in Parsers)
-        {
-            var res = parser(s);
-            if (res.Item1 && IsValidDateTime(res.Item2))
-            {
-                result = res.Item2;
-                return true;
-            }
-        }
-
-        return false;
-    }
     public static bool TryExtractMinimumValidDateTime(string s, out DateTime result)
     {
         if (MatchesInvalidRegex(s))
@@ -90,7 +55,7 @@ public class DateHelper
                 dates.Add(res.Item2);
         }
 
-        if (dates.Any())
+        if (dates.Count > 0)
         {
             result = dates.Min();
             return true;
@@ -112,6 +77,7 @@ public class DateHelper
     }
     private static bool IsValidDateTime(long number)
     {
+
         try
         {
             if (number >= DateTime.MinValue.Ticks && number <= DateTime.MaxValue.Ticks)
@@ -142,7 +108,7 @@ public class DateHelper
         return false;
     }
 
-    private static Regex GetRegex(string s)
+    private static Regex CreateRegex(string s)
     {
         return new Regex(s, RegexOptions.Compiled,
             new TimeSpan(0, 0, 0, 0, RegexTimeoutMilliseconds));
@@ -169,7 +135,7 @@ public class DateHelper
             if (long.TryParse(match.Value, out var res) && IsValidDateTime(res))
                 return (true, new DateTime(res));
 
-            s = s.Replace(match.Value, string.Empty);
+            s = s.Replace(match.Value, string.Empty, StringComparison.Ordinal);
         }
 
         return (false, default);
@@ -185,6 +151,37 @@ public class DateHelper
 
         result = Match.Empty;
         return false;
+    }
+    private static string GenerateRegexPatternByDateFormat(string format)
+    {
+        const string millisecond = @"(\\d{3})";
+        const string minute = @"(0[0-9]|[1-5][0-9])";
+        const string hour = @"(0[0-9]|1[0-9]|2[0-3])";
+        const string dayNumber = @"(0[1-9]|[12][0-9]|3[01])";
+        const string dayName = @"((?:Mon|Tue(?:s)?|Wed(?:nes)?|Thu(?:rs)?|Fri|Sat(?:ur)?|Sun)(?:day)?)";
+        const string monthNumber = @"(?:0[1-9]|1[0-2])";
+        const string monthName = @"(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)";
+        const string year = @"((19|20)\d\d)";
+
+        var pairs = new (string Match, string Pattern, bool CaseSensitive)[]
+        {
+            ("YYYY", year, false),
+            ("MMM", monthName, false),
+            ("MM", monthNumber, true),
+            ("DDD", dayName, false),
+            ("DD", dayNumber, false),
+            ("HH", hour, false),
+            ("mm", minute, true),
+            ("ss", minute, false),
+            ("fff", millisecond, false),
+        };
+
+        var regex = new string(format);
+        foreach (var item in pairs)
+            regex = regex.Replace(item.Match, item.Pattern, item.CaseSensitive
+                ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase);
+
+        return regex;
     }
     #endregion
 }

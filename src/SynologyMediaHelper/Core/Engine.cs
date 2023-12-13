@@ -18,10 +18,6 @@ public static class Engine
     private static int Fails;
     #endregion
 
-    #region Constructors
-
-    #endregion
-
     #region Behavior
     private static void InitializeResume()
     {
@@ -219,7 +215,6 @@ public static class Engine
             return;
         }
 
-#pragma warning disable CA1031 // Do not catch general exception types
         try
         {
             MakeSureDirectoryExistsForFile(dest);
@@ -230,7 +225,6 @@ public static class Engine
         {
             LogFail(logger, dest);
         }
-#pragma warning restore CA1031 // Do not catch general exception types
     }
 
     private static void UpdateMediaTargetedDateTime(ExifHelper exif, LogHelper logger, FileInfo file, DateTime dateTime)
@@ -242,10 +236,8 @@ public static class Engine
     }
     private static bool FilePathIsAlignedWithDate(FileInfo file, DateTime dateTime)
     {
-#pragma warning disable CA1305 // Specify IFormatProvider
         return dateTime.Year == int.Parse(file.Directory!.Parent!.Name)
             && dateTime.Month == int.Parse(file.Directory!.Name);
-#pragma warning restore CA1305 // Specify IFormatProvider
     }
 
     private static void LogMove(LogHelper logger, string src, string dest)
@@ -266,9 +258,7 @@ public static class Engine
 
     private static void LogProgress(string message)
     {
-#pragma warning disable S6561 // Avoid using "DateTime.Now" for benchmarking or timing operations
         var t = DateTime.Now - StartDateTime;
-#pragma warning restore S6561 // Avoid using "DateTime.Now" for benchmarking or timing operations
         var actions = (Moves + Updates) / t.TotalSeconds;
         var processes = CurrentFileIndex / t.TotalSeconds;
 
