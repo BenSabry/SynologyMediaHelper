@@ -3,7 +3,7 @@
 
 
 # Downloads
-<b>*Last release*</b> [v0.2.0-alpha](https://github.com/BenSabry/SynologyMediaHelper/releases/tag/v0.2.0-alpha)<br />
+<b>*Last release*</b> [v0.3.0-alpha](https://github.com/BenSabry/SynologyMediaHelper/releases/tag/v0.3.0-alpha)<br />
 <b>*All releases*</b> [releases](https://github.com/BenSabry/SynologyMediaHelper/releases)
 
 # Story
