@@ -5,13 +5,7 @@ public static class Engine
 {
     #region Fields-Static
     private static readonly Settings Settings = SettingsHelper.GetSettings();
-    private static readonly List<FileInfo> Files = new List<FileInfo>();
-    private static int TaskDelayTimeForEnumerationTask = Settings.TasksCount * 10;
-    private static bool FilesEnumerationTaskFinished;
-
     private static DateTime StartDateTime;
-    private static int StartFileIndex;
-    private static int CurrentFileIndex;
 
     private static int Moves;
     private static int Updates;
@@ -19,28 +13,6 @@ public static class Engine
     #endregion
 
     #region Behavior
-    private static void InitializeResume()
-    {
-        LogHelper.Log("InitializeStartPoint");
-
-        var logs = LogHelper.GetLogDirectory()
-            .GetFiles().OrderByDescending(i => i.LastWriteTime)
-            .ToArray();
-
-        foreach (var log in logs)
-        {
-            var lines = File.ReadAllLines(log.FullName);
-            if (lines.Length == default)
-                continue;
-
-            var parts = lines[lines.Length - 1].Split('\t');
-            if (parts.Length > 0 && int.TryParse(parts[0], out int index))
-            {
-                StartFileIndex = index;
-                return;
-            }
-        }
-    }
     private static void InitializeTimer()
     {
         StartDateTime = DateTime.Now;
@@ -60,77 +32,41 @@ public static class Engine
     public static void Run()
     {
         if (!SourcesAreValidToUse()) return;
-        if (Settings.EnableResume) InitializeResume();
 
         InitializeTimer();
         ValidateTasksConfig();
 
-        var tasks = new List<Task>
-        {
-            RunMediaFilesEnumerationTask()
-        };
+        GetMediaFiles().ForEachUsingTasks(
+            Settings.TasksCount,
+            (FileInfo file, long i, (ExifHelper exif, LogHelper logger) arg)
+                => Process(file, i, arg.exif, arg.logger),
 
-        for (int i = 0; i < Settings.TasksCount; i++)
-        {
-            var id = i;
-            tasks.Add(Task.Run(() =>
-            {
-                RunTask(id);
-            }));
-        }
+            () => (new ExifHelper(), new LogHelper(Settings.EnableLog)),
+            LogProgress);
 
-        Task.WaitAll(tasks.ToArray());
-        LogProgress(string.Empty);
+        Task.Delay(1000).Wait();
+        LogHelper.Log("\nCleaning Up...");
 
-        if (Settings.ClearBackupFilesOnComplete)
-            LogHelper.Log(ExifHelper.ClearBackupFiles(Settings.Sources));
-
-        if (Settings.DeleteEmptyDirectoriesOnComplete)
-        {
-            DeleteEmptyDirectories();
-            LogHelper.Log("DeleteEmptyDirectoriesOnComplete");
-        }
+        if (Settings.ClearBackupFilesOnComplete) ExifHelper.ClearBackupFiles(Settings.Sources);
+        if (Settings.DeleteEmptyDirectoriesOnComplete) DeleteEmptyDirectories();
     }
-    private static void RunTask(int index)
+    private static void Process(FileInfo file, long index, ExifHelper exif, LogHelper logger)
     {
-        LogHelper.Log($"Task {index + 1} Initialized");
+        if (!file.Exists) return;
 
-        var exif = new ExifHelper();
-        var logger = new LogHelper();
-
-        while (index < Files.Count || !FilesEnumerationTaskFinished)
+        var date = new DateTime[][]
         {
-            Thread.Sleep(TaskDelayTimeForEnumerationTask);
-            for (int i = index; i < Files.Count; i = index += Settings.TasksCount)
-            {
-                Interlocked.Add(ref CurrentFileIndex, 1);
-                if (StartFileIndex > i) continue;
+            DateHelper.ExtractAllPossibleDateTimes(file.Name),
+            exif.ReadAllDates(file.FullName),
 
-                var file = Files[i];
-                if (!file.Exists)
-                    continue;
-
-                //to prevent too much console messages
-                if ((i % (Settings.TasksCount + 1)) == 0)
-                    LogProgress(file.FullName);
-
-
-                if (exif.TryReadMediaDefaultCreationDate(file.FullName, out var date))
-                    MoveFileDirectoryBasedOnDate(logger, ref file, date);
-
-                else if (DateHelper.TryExtractMinimumValidDateTime(file.Name, out date))
-                {
-                    if (exif.TryReadMinimumDate(file.FullName, out var infoDate)
-                        && (infoDate.Date == date.Date || infoDate < date))
-                        date = infoDate;
-
-                    UpdateMediaTargetedDateTime(exif, logger, file, date);
-                    MoveFileDirectoryBasedOnDate(logger, ref file, date);
-                }
-            }
+            [ exif.ReadMediaDefaultCreationDate(file.FullName) ]
         }
+            .SelectMany()
+            .Where(DateHelper.IsValidDateTime)
+            .MinOrDefault();
 
-        LogResult(logger);
+        UpdateMediaTargetedDateTime(file, index, date, exif, logger);
+        MoveFileDirectoryBasedOnDate(ref file, index, date, logger);
     }
 
     private static bool SourcesAreValidToUse()
@@ -142,32 +78,38 @@ public static class Engine
         }
         return true;
     }
-    private static Task RunMediaFilesEnumerationTask()
+    private static IEnumerable<FileInfo> GetMediaFiles()
     {
-        LogHelper.Log("InizializeMediaFiles");
-
-        return Task.Run(() =>
-        {
-            foreach (var source in Settings.Sources)
-                if (!string.IsNullOrWhiteSpace(source))
+        foreach (var source in Settings.Sources)
+            if (!string.IsNullOrWhiteSpace(source))
+            {
+                if (File.Exists(source))
                 {
-                    if (File.Exists(source))
-                        Files.Add(new FileInfo(source));
-                    else if (Directory.Exists(source))
-                        EnumerateMediaFiles(new DirectoryInfo(source));
+                    var file = new FileInfo(source);
+                    if (IsSupportedMediaFile(file))
+                        yield return file;
                 }
 
-            FilesEnumerationTaskFinished = true;
-        });
-    }
-    private static void EnumerateMediaFiles(DirectoryInfo directory)
-    {
-        foreach (var file in directory.GetFiles().Where(IsSupportedMediaFile))
-            if (!Files.Exists(i => i.FullName.Equals(file.FullName, StringComparison.Ordinal)))
-                Files.Add(file);
+                else if (Directory.Exists(source))
+                {
+                    var sources = Settings.Sources
+                        .Where(i => !i.Equals(source, StringComparison.Ordinal))
+                        .ToArray();
 
-        foreach (var dir in directory.GetDirectories())
-            EnumerateMediaFiles(dir);
+                    foreach (var file in GetMediaFiles(new DirectoryInfo(source), sources))
+                        yield return file;
+                }
+            }
+    }
+    private static IEnumerable<FileInfo> GetMediaFiles(DirectoryInfo directory, string[] sources)
+    {
+        if (!sources.Contains(directory.FullName))
+            foreach (var file in directory.EnumerateFiles().Where(IsSupportedMediaFile))
+                yield return file;
+
+        foreach (var dir in directory.EnumerateDirectories())
+            foreach (var file in GetMediaFiles(dir, sources))
+                yield return file;
     }
     private static void DeleteEmptyDirectories()
     {
@@ -191,14 +133,12 @@ public static class Engine
             && SynologyHelper.IsSupportedMediaFile(file);
     }
 
-    private static void MoveFileDirectoryBasedOnDate(LogHelper logger, ref FileInfo file, DateTime dateTime)
+    private static void MoveFileDirectoryBasedOnDate(ref FileInfo file, long index, DateTime dateTime, LogHelper logger)
     {
-        if (FilePathIsAlignedWithDate(file, dateTime) || !file.Exists) return;
+        var dest = GetNewDestinationPath(file, dateTime);
 
-        var dest = @$"{file.Directory!.Parent!.Parent}\{dateTime.Year}\"
-            + @$"{CommonHelper.FormatNumberToLength(dateTime.Month, 2)}\{file.Name}";
-
-        TryMoveFile(logger, ref file, dest);
+        if (!Equals(file.FullName, dest))
+            TryMoveFile(logger, ref file, index, dest);
     }
     private static void MakeSureDirectoryExistsForFile(string filePath)
     {
@@ -207,72 +147,113 @@ public static class Engine
         if (!dir!.Exists)
             dir.Create();
     }
-    private static void TryMoveFile(LogHelper logger, ref FileInfo src, string dest)
+    private static void TryMoveFile(LogHelper logger, ref FileInfo file, long index, string dest)
     {
         if (File.Exists(dest))
         {
-            LogFail(logger, src.FullName);
+            LogFail(logger, index, file.FullName);
             return;
         }
 
         try
         {
             MakeSureDirectoryExistsForFile(dest);
-            src.MoveTo(dest);
-            LogMove(logger, src.FullName, dest);
+            var src = file.FullName;
+            file.MoveTo(dest);
+            LogMove(logger, index, src, dest);
         }
         catch
         {
-            LogFail(logger, dest);
+            LogFail(logger, index, dest);
         }
     }
 
-    private static void UpdateMediaTargetedDateTime(ExifHelper exif, LogHelper logger, FileInfo file, DateTime dateTime)
+    private static void UpdateMediaTargetedDateTime(FileInfo file, long index, DateTime dateTime, ExifHelper exif, LogHelper logger)
     {
         var valid = exif.TryUpdateMediaTargetedDateTime(file.FullName, dateTime);
 
-        if (valid) LogUpdate(logger, file.FullName);
-        else LogFail(logger, file.FullName);
+        if (valid) LogUpdate(logger, index, file.FullName);
+        else LogFail(logger, index, file.FullName);
     }
-    private static bool FilePathIsAlignedWithDate(FileInfo file, DateTime dateTime)
-    {
-        return dateTime.Year == int.Parse(file.Directory!.Parent!.Name)
-            && dateTime.Month == int.Parse(file.Directory!.Name);
-    }
+    private static string GetNewDestinationPath(FileInfo file, DateTime dateTime)
+        => Path.Combine(Settings.Target,
+            CommonHelper.FormatNumberToLength(dateTime.Year, 4),
+            CommonHelper.FormatNumberToLength(dateTime.Month, 2),
+            file.Name);
 
-    private static void LogMove(LogHelper logger, string src, string dest)
+    private static void LogMove(LogHelper logger, long index, string src, string dest)
     {
         Interlocked.Add(ref Moves, 1);
-        logger.LogToDisk($"{CurrentFileIndex}\tMove\t{src}\t{dest}");
+        logger.LogToDisk($"{index}\tMove\t{src}\t{dest}");
     }
-    private static void LogUpdate(LogHelper logger, string src)
+    private static void LogUpdate(LogHelper logger, long index, string src)
     {
         Interlocked.Add(ref Updates, 1);
-        logger.LogToDisk($"{CurrentFileIndex}\tUpdate\t{src}");
+        logger.LogToDisk($"{index}\tUpdate\t{src}");
     }
-    private static void LogFail(LogHelper logger, string src)
+    private static void LogFail(LogHelper logger, long index, string src)
     {
         Interlocked.Add(ref Fails, 1);
-        logger.LogToDisk($"{CurrentFileIndex}\tFail\t{src}");
+        logger.LogToDisk($"{index}\tFail\t{src}");
     }
-
-    private static void LogProgress(string message)
+    private static void LogProgress(long index, long total)
     {
         var t = DateTime.Now - StartDateTime;
-        var actions = (Moves + Updates) / t.TotalSeconds;
-        var processes = CurrentFileIndex / t.TotalSeconds;
+        var r = (t / (index + 1)) * (total - index);
+        var processes = index / t.TotalSeconds;
 
         LogHelper.Clear();
         LogHelper.Log(
-            "\n\n"
-            + $"{t.Hours}H:{t.Minutes}M:{t.Seconds}S Currnet: {CurrentFileIndex}/{Files.Count} Moved:{Moves} Updated: {Updates}\n"
+            $"SynologyMediaHelper by BenSabry\n"
+            + $"https://github.com/BenSabry/SynologyMediaHelper\n\n"
+            + $"Elapsed time: {t.Hours}:{t.Minutes}:{t.Seconds}\n"
+            + $"Elapsed time: {r.Hours}:{r.Minutes}:{r.Seconds}\n"
+            + $"Parallel Tasks Running: {Settings.TasksCount}\n\n"
+
+            + $"Currnet: {index}/{total} Moved:{Moves} Updated: {Updates}\n"
             + $"Processing Speed: {(int)processes}/Second {(int)(processes * 60)}/Minute {(int)(processes * 3600)}/Hour\n"
-            + $"Actions Speed: {(int)actions}/Second {(int)(actions * 60)}/Minute {(int)(actions * 3600)}/Hour\n"
-            + $"{message}\n\n\n");
+            + GenerateConsoleProgressBar(index, total));
     }
-    private static void LogResult(LogHelper logger)
+
+    public static string GenerateConsoleProgressBar(long index, long total)
     {
-        logger.LogToDisk($"{CurrentFileIndex}  Moved: {Moves}  Updated:  {Updates}");
+        return GenerateProgressBar(index, total, Console.WindowWidth);
+    }
+    private static string GenerateProgressBar(long index, long total, long width)
+    {
+        if (total == default)
+        {
+            index++;
+            total++;
+        }
+
+        var perc = Math.Round((index / (decimal)total) * 100, 2);
+        var percText = $"[ {perc}% ";
+
+        if (width < percText.Length + 2)
+            return $"{percText}]";
+
+        var done = Math.Max(((width - percText.Length) / (decimal)100 * perc) - 2, default);
+        var remain = (width - (percText.Length)) - (int)done;
+
+        return $"{percText}{new string('-', (int)done)}{new string(' ', (int)remain - 1)}]";
+    }
+    #endregion
+
+    #region TEST
+    public static IEnumerable<FileInfo> InitAndGetFilesForTest()
+    {
+        Settings.Target = "C:\\Data\\SynologyMediaHelperTEST\\Target";
+        Settings.Sources = [
+            "C:\\Data\\SynologyMediaHelperTEST\\Sources\\"
+        ];
+
+        if (!SourcesAreValidToUse()) return [];
+
+        InitializeTimer();
+        ValidateTasksConfig();
+
+        return GetMediaFiles();
     }
     #endregion
 }

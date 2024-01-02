@@ -1,15 +1,15 @@
-﻿using SynologyMediaHelper.Helpers;
-using System.Text;
+﻿using System.Text;
 
 namespace SynologyMediaHelper.Helpers;
 public class ExifHelper
 {
     #region Fields-Static
     private const string ExifTool = "exiftool.exe";
-    private const string ExifDateFormat = "yyyy:MM:dd HH:mm:ss";
+    private const string ExifDateFormat = "yyyy:MM:dd HH:mm:sszzz";
     private const string ExifDefaultCreationTag = "FileCreateDate";
     private const bool AttemptToFixMediaIncorrectOffsets = true;
 
+    private static readonly char[] separator = new[] { '\t' };
     private static readonly string ToolsDirectory = CommonHelper.ToolsDirectory;
     private static readonly string TempDirectory = Path.Combine(CommonHelper.BaseDirectory, @"Temp\Tools");
 
@@ -112,6 +112,9 @@ public class ExifHelper
     }
     public static string ClearBackupFiles(params string[] sources)
     {
+        if (sources is null)
+            return string.Empty;
+
         var builder = new StringBuilder();
         foreach (var src in sources)
             if (string.IsNullOrWhiteSpace(src) && Directory.Exists(src))
@@ -165,36 +168,37 @@ public class ExifHelper
     #region Behavior-Instance
     public bool TryReadMinimumDate(string path, out DateTime result)
     {
-        var dates = ReadAllDates(path)
-            .Where(DateHelper.IsValidDateTime);
-
-        if (dates.Any())
-        {
-            result = dates.Min();
-            return true;
-        }
-
-        result = default;
-        return false;
+        result = ReadMinimumDate(path);
+        return result != default;
     }
+    public DateTime ReadMinimumDate(string path)
+        => ReadAllDates(path).Where(DateHelper.IsValidDateTime).MinOrDefault();
     public DateTime[] ReadAllDates(string path)
     {
         return ExifRead(Id, "-T -AllDates", path)
-            .Split(new[] { '\t' }, StringSplitOptions.RemoveEmptyEntries)
+            .Split(separator, StringSplitOptions.RemoveEmptyEntries)
             .Select(i =>
             {
                 DateHelper.TryParseDateTime(i.Trim(), ExifDateFormat, out DateTime dateTime);
                 return dateTime;
             })
-            .Where(i => i != default)
+            .Where(DateHelper.IsValidDateTime)
             .Distinct()
             .ToArray();
     }
 
     public bool TryReadMediaDefaultCreationDate(string path, out DateTime dateTime)
     {
-        var value = ExifRead(Id, $"-T -{ExifDefaultCreationTag}", path);
-        return DateHelper.TryParseDateTime(value, ExifDateFormat, out dateTime);
+        dateTime = ReadMediaDefaultCreationDate(path);
+        return DateHelper.IsValidDateTime(dateTime);
+    }
+    public DateTime ReadMediaDefaultCreationDate(string path)
+    {
+        DateHelper.TryParseDateTime(
+            ExifRead(Id, $"-T -{ExifDefaultCreationTag}", path),
+            ExifDateFormat, out var dateTime);
+
+        return dateTime;
     }
     public bool TryUpdateMediaTargetedDateTime(string path, DateTime dateTime)
     {

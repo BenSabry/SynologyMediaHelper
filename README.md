@@ -1,9 +1,8 @@
 # Synology Media Helper
 <b>*Synology Media Helper*</b> is a utility designed to rectify issues with media file organization in your <b>*Synology Photos App*</b>, <b>*[Issues like these](#Fixable-Issues)*</b>.
 
-
 # Downloads
-<b>*Last release*</b> [v0.3.0-alpha](https://github.com/BenSabry/SynologyMediaHelper/releases/tag/v0.3.0-alpha)<br />
+<b>*Latest release*</b> [v0.4.0-alpha](https://github.com/BenSabry/SynologyMediaHelper/releases/tag/v0.4.0-alpha)<br />
 <b>*All releases*</b> [releases](https://github.com/BenSabry/SynologyMediaHelper/releases)
 
 # Story
@@ -48,29 +47,29 @@ Now just wait and your <b>*Synology*</b> will reindex media files and reorder th
 [<b>*Synology Photos: Best practice for photos with no taken date*</b>](https://www.reddit.com/r/synology/comments/rn5cvm/best_practice_for_photos_with_no_taken_date/)<br />
 
 # Tech/Tools used
-<b>*DotNET*</b>: is the free, open-source, cross-platform framework for building modern apps and powerful cloud services.<br />
+<b>*.NET*</b>: is the free, open-source, cross-platform framework for building modern apps and powerful cloud services.<br />
 <b>*ExifTool*</b>: is a customizable set of Perl modules plus a full-featured command-line application for reading and writing meta information in a wide variety of files.<br />
 
 # AppSettings
 <b>*TasksCount*</b>: (number) of <b>*Tasks/Threads*</b> to work simultaneously.<br />
-<b>*EnableResume*</b>: (flag) to continue from the same point at which you previously stopped.<br />
 <b>*EnableLog*</b>: (flag) to log actions to log.txt files found in <b>*.\Temp\Log.*</b><br />
 <b>*AttemptToFixMediaIncorrectOffsets*</b>: (flag) to fix file info (like duplications/incorrect offsets ...etc)<br />
 <b>*ClearBackupFilesOnComplete*</b>: (flag) Clear temp files on complete.<br />
 <b>*DeleteEmptyDirectoriesOnComplete*</b>: (flag) Delete empty directories on complete.<br />
+<b>*Sources*</b>: (text) target directory path where all files will be transferred post-processing..<br />
 <b>*Sources*</b>: (array) paths of libraries or files which will be scanned<br />
 <br />
 <b>*Example:*</b><br />
 {<br />
 &nbsp;&nbsp;"TasksCount": 2,<br />
-&nbsp;&nbsp;"EnableResume":  true,<br />
 &nbsp;&nbsp;"EnableLog": true,<br />
 &nbsp;&nbsp;"AttemptToFixMediaIncorrectOffsets": true,<br />
 &nbsp;&nbsp;"ClearBackupFilesOnComplete": true,<br />
 &nbsp;&nbsp;"DeleteEmptyDirectoriesOnComplete": true,<br />
+&nbsp;&nbsp;"Target": "\\\\SynologyNAS\\home\\Photos\\PhotoLibrary",<br />
 &nbsp;&nbsp;"Sources": [<br />
 &nbsp;&nbsp;&nbsp;&nbsp;"\\\\SynologyNAS\\home\\Photos\\MobileBackup",<br />
-&nbsp;&nbsp;&nbsp;&nbsp;"\\\\SynologyNAS\\home\\Photos\\PhotoLibrary",<br />
+&nbsp;&nbsp;&nbsp;&nbsp;"D:\\Data\\Media\\Photos\\Personal\\Family",<br />
 &nbsp;&nbsp;&nbsp;&nbsp;"\\\\SynologyNAS\\home\\GraduationPhoto.jpg",<br />
 &nbsp;&nbsp;&nbsp;&nbsp;"\\\\SynologyNAS\\home\\GraduationVideo.mp4",<br />
 &nbsp;&nbsp;]<br />

@@ -1,61 +1,27 @@
 ﻿using System.Globalization;
+using System.Text;
 using System.Text.RegularExpressions;
 
 namespace SynologyMediaHelper.Helpers;
 public static class DateHelper
 {
     #region Fields-Static
+    private const string RegexOptionalChar = "(.?)";
     private const int RegexTimeoutMilliseconds = 100;
-    private static readonly Func<string, (bool Valid, DateTime Value)>[] Parsers = [MatchFormatedRegex, MatchNumericRegex];
 
-    private static readonly Regex[] NumericsRegexes = [CreateRegex(@"\d+")];
-    private static readonly Regex[] InvalidRegexes = [CreateRegex(@"(^FB_IMG_)(\d+)"), CreateRegex(@"(^received_)(\d+)")];
-    private static readonly (Regex, string)[] FormatedRegexes = new string[]
-    {
-        "yyyyMMdd_HHmmss",
-        "yyyyMMdd-HHmmss",
-        "yyyyMMdd HHmmss",
-
-        "yyyy_MM_dd_HH_mm_ss",
-        "yyyy_MM_dd-HH_mm_ss",
-        "yyyy_MM_dd HH_mm_ss",
-        "yyyy-MM-dd_HH-mm-ss",
-        "yyyy-MM-dd-HH-mm-ss",
-        "yyyy-MM-dd HH-mm-ss",
-        "yyyy MM dd_HH mm ss",
-        "yyyy MM dd-HH mm ss",
-        "yyyy MM dd HH mm ss",
-
-        "dd MMM YYYY HH:mm:ss",
-        "dd MMM YYYY HH_mm_ss",
-        "dd MMM YYYY HH-mm-ss",
-
-        "yyyyMMdd",
-        "yyyy-MM-dd",
-        "yyyy_MM_dd"
-    }
-        .Select(format => (CreateRegex(GenerateRegexPatternByDateFormat(format)), format))
-        .ToArray();
+    private static readonly Func<string, (bool Valid, DateTime Value)>[] Parsers = GetParsers();
+    private static readonly Regex[] NumericsRegexes = GetNumericsRegexes();
+    private static readonly Regex[] InvalidRegexes = GetInvalidRegexes();
+    private static readonly (Regex regex, string format)[] FormatedRegexes = GetFormatedRegex();
     #endregion
 
     #region Behavior
     public static bool TryExtractMinimumValidDateTime(string s, out DateTime result)
     {
-        if (MatchesInvalidRegex(s))
-        {
-            result = default;
-            return false;
-        }
+        var dates = ExtractAllPossibleDateTimes(s)
+            .Where(IsValidDateTime);
 
-        var dates = new List<DateTime>();
-        foreach (var parser in Parsers)
-        {
-            var res = parser(s);
-            if (res.Item1 && IsValidDateTime(res.Item2))
-                dates.Add(res.Item2);
-        }
-
-        if (dates.Count > 0)
+        if (dates.Any())
         {
             result = dates.Min();
             return true;
@@ -64,7 +30,16 @@ public static class DateHelper
         result = default;
         return false;
     }
+    public static DateTime[] ExtractAllPossibleDateTimes(string s)
+    {
+        if (MatchesInvalidRegex(s)) return [];
 
+        return Parsers
+            .Select(parser => parser(s))
+            .Where(i => i.Valid)
+            .Select(i => i.Value)
+            .ToArray();
+    }
     public static bool TryParseDateTime(string s, string format, out DateTime result)
     {
         return DateTime.TryParseExact(s, format,
@@ -73,11 +48,11 @@ public static class DateHelper
     }
     public static bool IsValidDateTime(DateTime date)
     {
-        return date < DateTime.Now && date.Year > 2000;
+        //TODO make it more accurate
+        return date < DateTime.Now && date.Year > 1800;
     }
     private static bool IsValidDateTime(long number)
     {
-
         try
         {
             if (number >= DateTime.MinValue.Ticks && number <= DateTime.MaxValue.Ticks)
@@ -108,21 +83,51 @@ public static class DateHelper
         return false;
     }
 
+    private static Func<string, (bool Valid, DateTime Value)>[] GetParsers()
+    {
+        return [MatchFormatedRegex, MatchNumericRegex];
+    }
+    private static Regex[] GetNumericsRegexes()
+    {
+        return [CreateRegex(@"\d+")];
+    }
+    private static Regex[] GetInvalidRegexes()
+    {
+        return [CreateRegex(@"(^FB_IMG_)(\d+)"), CreateRegex(@"(^received_)(\d+)")];
+    }
+    private static (Regex regex, string format)[] GetFormatedRegex()
+    {
+        return new string[]
+            {
+                "yyyyMMddHHmmsszzz",
+                "yyyyMMddHHmmss",
+                "ddMMMYYYYHHmmss",
+                "yyyyMMdd",
+            }
+            .Select(AddOptionalCharBetweenFormatParts)
+            .Select(i => (CreateRegex(GenerateRegexPatternByDateFormat(i)), i))
+            .ToArray();
+    }
+
     private static Regex CreateRegex(string s)
     {
         return new Regex(s, RegexOptions.Compiled,
             new TimeSpan(0, 0, 0, 0, RegexTimeoutMilliseconds));
     }
-    public static bool MatchesInvalidRegex(string s)
+    private static bool MatchesInvalidRegex(string s)
     {
-        return TryMatchesRegex(s, InvalidRegexes, out var _);
+        return TryMatchAnyRegex(s, InvalidRegexes, out var _);
     }
     private static (bool, DateTime) MatchFormatedRegex(string s)
     {
         foreach (var i in FormatedRegexes)
         {
-            var match = i.Item1.Match(s);
-            if (match.Success && TryParseDateTime(match.Value, i.Item2, out var date))
+            var match = i.regex.Match(s);
+            if (match.Success &&
+                TryParseDateTime(match.Value,
+                RecoverOptionalCharsInFormatUsingValue(i.format, match.Value),
+                out var date))
+
                 return (true, date);
         }
 
@@ -130,7 +135,7 @@ public static class DateHelper
     }
     private static (bool, DateTime) MatchNumericRegex(string s)
     {
-        while (TryMatchesRegex(s, NumericsRegexes, out Match match))
+        while (TryMatchAnyRegex(s, NumericsRegexes, out Match match))
         {
             if (long.TryParse(match.Value, out var res) && IsValidDateTime(res))
                 return (true, new DateTime(res));
@@ -140,7 +145,7 @@ public static class DateHelper
 
         return (false, default);
     }
-    private static bool TryMatchesRegex(string s, Regex[] regexes, out Match result)
+    private static bool TryMatchAnyRegex(string s, Regex[] regexes, out Match result)
     {
         foreach (var regex in regexes)
         {
@@ -152,6 +157,7 @@ public static class DateHelper
         result = Match.Empty;
         return false;
     }
+
     private static string GenerateRegexPatternByDateFormat(string format)
     {
         const string millisecond = @"(\\d{3})";
@@ -162,6 +168,7 @@ public static class DateHelper
         const string monthNumber = @"(?:0[1-9]|1[0-2])";
         const string monthName = @"(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)";
         const string year = @"((19|20)\d\d)";
+        const string zone = @"([+-]\d{2}:\d{2})";
 
         var pairs = new (string Match, string Pattern, bool CaseSensitive)[]
         {
@@ -174,14 +181,67 @@ public static class DateHelper
             ("mm", minute, true),
             ("ss", minute, false),
             ("fff", millisecond, false),
+            ("zzz", zone, false)
         };
 
-        var regex = new string(format);
         foreach (var item in pairs)
-            regex = regex.Replace(item.Match, item.Pattern, item.CaseSensitive
+            format = format.Replace(item.Match, item.Pattern, item.CaseSensitive
                 ? StringComparison.Ordinal : StringComparison.OrdinalIgnoreCase);
 
-        return regex;
+        return format;
     }
+    private static string AddOptionalCharBetweenFormatParts(string s)
+    {
+        var sb = new StringBuilder(s);
+
+        int l = 0, r;
+        while (l < sb.Length)
+        {
+            r = l;
+            while (r < sb.Length)
+                if (sb[l] == sb[r]) r++;
+                else break;
+
+            if (r == sb.Length)
+                break;
+
+            sb.Insert(r, RegexOptionalChar);
+            l = r + RegexOptionalChar.Length;
+        }
+
+        return sb.ToString();
+    }
+    private static string RecoverOptionalCharsInFormatUsingValue(string format, string value)
+    {
+        var sb = new StringBuilder(format);
+
+        int l = 0, r, i, changes = 0;
+        while (l < sb.Length)
+        {
+            r = 0;
+            while (l + r < sb.Length && r < RegexOptionalChar.Length)
+                if (sb[l + r] == RegexOptionalChar[r]) r++;
+                else break;
+
+            if (r == RegexOptionalChar.Length)
+            {
+                sb.Remove(l, RegexOptionalChar.Length);
+
+                i = l + changes;
+                if (!IsNumber(value[i]) && !IsLetter(value[i]))
+                {
+                    sb.Insert(l, value[i]);
+                    changes++;
+                }
+            }
+
+            l++;
+        }
+
+        return sb.ToString();
+    }
+
+    private static bool IsNumber(char c) => c >= '0' && c <= '9';
+    private static bool IsLetter(char c) => (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
     #endregion
 }

@@ -1,6 +1,7 @@
 ﻿using SynologyMediaHelper.Core;
+using SynologyMediaHelper.Helpers;
 
 Engine.Run();
 
-Console.WriteLine("\n\nPress any key to Exit!");
+LogHelper.Log("\nPress any key to Exit!");
 Console.ReadKey();
