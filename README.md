@@ -1,3 +1,6 @@
+# ⛔️ DEPRECATED
+This repository is now deprecated and no longer being maintained. We have moved to a new repository architecture for general purpose Media Organization, which can be found [here](https://github.com/BenSabry/MediaOrganizer). 
+
 # Synology Media Helper
 <b>*Synology Media Helper*</b> is a utility designed to rectify issues with media file organization in your <b>*Synology Photos App*</b>, <b>*[Issues like these](#Fixable-Issues)*</b>.
 
